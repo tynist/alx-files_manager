@@ -1,8 +1,8 @@
 // Import the AppController, UsersController, and AuthController modules
-const express = require('express'); // Import the Express module
 const AppController = require('../controllers/AppController');
 const UsersController = require('../controllers/UsersController');
 const AuthController = require('../controllers/AuthController');
+const express = require('express');
 
 // Create a function that defines the routes
 const controllerRouting = (app) => {
