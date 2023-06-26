@@ -6,25 +6,22 @@ const dbClient = require('../utils/db');
 class AppController {
   // Get the status of Redis and MongoDB connections
   static getStatus(req, res) {
-    // Create a statusData object
-    const statusData = {
+    const data = {
       redis: redisClient.isAlive(),
       db: dbClient.isAlive(),
     };
-
     // Send the statusData object back to the client
-    res.send(statusData);
+    res.status(200).send(data);
   }
 
-  // Get the number of users and files from the MongoDB database
-  // Create a statsData object
+  static async getStats(req, res) {
+    // Create a statsData object
     const statsData = {
       users: await dbClient.nbUsers(),
       files: await dbClient.nbFiles(),
     };
-
     // Send the statsData object back to the client
-    res.send(statsData);
+    res.status(200).send(statsData);
   }
 }
 
