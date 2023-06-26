@@ -27,8 +27,7 @@ class AuthController {
       .findOne(credentials);
     if (!user) return res.status(401).send({ error: 'Unauthorized' });
 
-  
-    const token = uuidv4();  // Generate a new token
+    const token = uuidv4(); // Generate a new token
     const key = `auth_${token}`; // Create a key in Redis for the token
     // Set the key in Redis with the user ID
     await RedisClient.set(key, user._id.toString(), 86400);
