@@ -51,12 +51,14 @@ class DBClient {
     const myDB = this.myClient.db();
     const myCollection = myDB.collection('users');
 
-    if ('_id' in filters) {
+    const filtered = { ...filters }; // Shallow copy of filters object
+
+    if ('_id' in filtered) {
       // Convert '_id' filter to ObjectId
-      filters._id = ObjectId(filters._id);
+      filtered._id = ObjectId(filtered._id);
     }
 
-    return myCollection.findOne(filters);
+    return myCollection.findOne(filtered);
   }
 
   // Filter and find files based on the provided filters
@@ -64,19 +66,23 @@ class DBClient {
     const myDB = this.myClient.db();
     const myCollection = myDB.collection('files');
 
-    const idFilters = ['_id', 'userId', 'parentId'].filter((prop) => prop in filters && filters[prop] !== '0');
+    const idFilters = ['_id', 'userId', 'parentId'].filter(
+      (prop) => prop in filters && filters[prop] !== '0'
+    );
+
+    const filtered = { ...filters }; // Shallow copy of filters object
 
     idFilters.forEach((i) => {
       // Convert '_id', 'userId', and 'parentId' filters to ObjectId
-      filters[i] = ObjectId(filters[i]);
+      filtered[i] = ObjectId(filtered[i]);
     });
 
-    return myCollection.findOne(filters);
+    return myCollection.findOne(filtered);
   }
 }
 
 // Create an instance of DBClient
 const dbClient = new DBClient();
 
-// Export the DBClient instance as the module's default export
+// Export DBClient as default export.
 module.exports = dbClient;
