@@ -2,7 +2,7 @@
 const express = require('express');
 const { env } = require('process');
 
- // Import the main route file.
+// Import the main route file.
 const mainRoute = require('./routes/index');
 
 // Create an Express application and sets port number
