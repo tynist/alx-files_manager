@@ -11,10 +11,10 @@ class FilesController {
     } = request.body;
 
     if (
-      !name ||
-      !type ||
-      (!['folder', 'file', 'image'].includes(type)) ||
-      (!data && type !== 'folder')
+      !name
+      || !type
+      || (!['folder', 'file', 'image'].includes(type))
+      || (!data && type !== 'folder')
     ) {
       // Missing name, type, or data
       response
@@ -82,7 +82,7 @@ class FilesController {
     const page = request.query.page ? request.query.page : 0;
     const cursor = await dbClient.findFiles(
       { parentId: _parentId, userId: usrId },
-      { limit: 20, skip: 20 * page }
+      { limit: 20, skip: 20 * page },
     );
     const res = await cursor.toArray();
     res.forEach((i) => {
