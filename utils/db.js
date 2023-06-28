@@ -67,7 +67,7 @@ class DBClient {
     const myCollection = myDB.collection('files');
 
     const idFilters = ['_id', 'userId', 'parentId'].filter(
-      (prop) => prop in filters && filters[prop] !== '0'
+      (prop) => prop in filters && filters[prop] !== '0',
     );
 
     const filtered = { ...filters }; // Shallow copy of filters object
