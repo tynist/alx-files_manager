@@ -64,35 +64,35 @@ class FilesController {
   }
 
   // Retrieves a list of files based on the provided parent ID and user ID.
-static async getIndex(request, response) {
-  const usrId = request.user._id;
-  let _parentId = '0';
-  let page = 0;
+  static async getIndex(request, response) {
+    const usrId = request.user._id;
+    let _parentId = '0';
+    let page = 0;
 
-  if (request.query.parentId) {
-    _parentId = request.query.parentId;
+    if (request.query.parentId) {
+      _parentId = request.query.parentId;
+    }
+
+    if (request.query.page) {
+      page = request.query.page;
+    }
+
+    const cursor = await dbClient.findFiles(
+      { parentId: _parentId, userId: usrId },
+      { limit: 20, skip: 20 * page },
+    );
+
+    const res = await cursor.toArray();
+
+    // Update the IDs and remove _id properties from each item in the result
+    const transformedRes = res.map((item) => {
+      const { _id, ...rest } = item;
+      return { id: _id, ...rest };
+    });
+
+    // Return files
+    response.status(200).json(transformedRes).end();
   }
-
-  if (request.query.page) {
-    page = request.query.page;
-  }
-
-  const cursor = await dbClient.findFiles(
-    { parentId: _parentId, userId: usrId },
-    { limit: 20, skip: 20 * page },
-  );
-
-  const res = await cursor.toArray();
-
-  // Update the IDs and remove _id properties from each item in the result
-  const transformedRes = res.map((item) => {
-    const { _id, ...rest } = item;
-    return { id: _id, ...rest };
-  });
-
-  // Return files
-  response.status(200).json(transformedRes).end();
-}
 
   // Publishes a file by updating its isPublic property to true.
   static async putPublish(request, response) {
