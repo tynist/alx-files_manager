@@ -1,10 +1,9 @@
 0x04. Files manager
 ===================
 
-Back-end JavaScript ES6 NoSQL MongoDB Redis NodeJS ExpressJS Kue
+Back-end, JavaScript, ES6, NoSQL, MongoDB, Redis, NodeJS, ExpressJS, Kue,
 
--   By: Guillaume, CTO at Holberton School
--   Weight: 1
+-   By: Guillaume, CTO at Holberton 
 
 
 This project is a summary of this back-end trimester: authentication, NodeJS, MongoDB, Redis, pagination and background processing.
