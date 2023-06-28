@@ -1,12 +1,16 @@
-import UtilController from './UtilController';
-import dbClient from '../utils/db';
+const UtilController = require('./UtilController');
+const dbClient = require('../utils/db');
 
-export default class UsersController {
+class UsersController {
+  // Creates a new user with the provided email and password.
   static async postNew(request, response) {
     const { email, password } = request.body;
+
     if (!email || !password) {
+      // Missing email or password
       response.status(400).json({ error: `Missing ${!email ? 'email' : 'password'}` }).end();
     } else if (await dbClient.userExists(email)) {
+      // User already exists
       response.status(400).json({ error: 'Already exist' }).end();
     } else {
       try {
@@ -21,6 +25,7 @@ export default class UsersController {
     }
   }
 
+  // Retrieves the user information for the authenticated user.
   static async getMe(request, response) {
     const { usr } = request;
     delete usr.password;
@@ -29,3 +34,5 @@ export default class UsersController {
     response.status(200).json(usr).end();
   }
 }
+
+module.exports = UsersController;
