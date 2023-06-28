@@ -1,45 +1,40 @@
 // Import the redis and util modules
-const redis = require('redis');
+const { createClient } = require('redis');
 const { promisify } = require('util');
 
 class RedisClient {
   constructor() {
     // Create a Redis client
-    this.client = redis.createClient();
+    this.myClient = createClient();
 
     // Set up an error handler
-    this.client.on('error', (error) => {
-      console.log('Redis client connection error:', error);
-    });
-
-    // Promisify Redis client methods
-    this.getAsync = promisify(this.client.get).bind(this.client);
-    this.setAsync = promisify(this.client.set).bind(this.client);
-    this.expireAsync = promisify(this.client.expire).bind(this.client);
-    this.delAsync = promisify(this.client.del).bind(this.client);
+    this.myClient.on('error', (error) => console.log(error));
   }
 
   // Check if Redis client is connected to the server
   isAlive() {
-    return this.client.connected;
+    return this.myClient.connected;
   }
 
-  // Get a key asynchronously from Redis
+  // Get the value associated with the given key from Redis
   async get(key) {
-    const value = await this.getAsync(key);
-    return value;
+    // Convert the `GET` command to a promise-based function using `promisify`
+    const getAsync = promisify(this.myClient.GET).bind(this.myClient);
+    return getAsync(key);
   }
 
-  // Set a key asynchronously from Redis
-  async set(key, value, duratiion) {
-    this.setAsync(key, value);
-    // Set an expiration time
-    this.expireAsync(key, duratiion);
+  // Set the value associated with the given key in Redis
+  async set(key, val, time) {
+    // Convert the `SET` command to a promise-based function using `promisify`
+    const setAsync = promisify(this.myClient.SET).bind(this.myClient);
+    return setAsync(key, val, 'EX', time);
   }
 
-  // Delete a key asynchronously from Redis
+  // Delete the key-value pair associated with the given key from Redis
   async del(key) {
-    this.delAsync(key);
+    // Convert the `DEL` command to a promise-based function using `promisify`
+    const delAsync = promisify(this.myClient.DEL).bind(this.myClient);
+    return delAsync(key);
   }
 }
 
