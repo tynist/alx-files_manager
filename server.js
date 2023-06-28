@@ -9,8 +9,10 @@ const port = env.PORT || 5000;
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Mount the main route
-app.use(mainRoute);
+// Mount the routes from routes/index.js on the root path '/
+app.use('/', mainRoute);
 
 // Start the server
-app.listen(port, '127.0.0.1');
+app.listen(port, () => {
+  console.log('Server running on port', port);
+});
