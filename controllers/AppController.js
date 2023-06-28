@@ -1,7 +1,8 @@
-import redisClient from '../utils/redis';
-import dbClient from '../utils/db';
+const redisClient = require('../utils/redis');
+const dbClient = require('../utils/db');
 
 class AppController {
+  // Get the status of Redis and the database
   static async getStatus(request, response) {
     const redisStatus = redisClient.isAlive();
     const dbStatus = dbClient.isAlive();
@@ -9,6 +10,7 @@ class AppController {
     response.status(200).json({ redis: redisStatus, db: dbStatus }).end();
   }
 
+  // Get statistics about the number of users and files in the database
   static async getStats(request, response) {
     const users = await dbClient.nbUsers();
     const files = await dbClient.nbFiles();
@@ -17,4 +19,4 @@ class AppController {
   }
 }
 
-export default AppController;
+module.exports = AppController;
