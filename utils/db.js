@@ -1,40 +1,77 @@
-const { MongoClient } = require('mongodb');
+const { env } = require('process');
+const { MongoClient, ObjectId } = require('mongodb');
 
 class DBClient {
   constructor() {
-    // initializes the `databaseName` value to null
-    this.databaseName = null;
-
     // Get MongoDB connection details from env variabless or use defaults
-    const host = process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || '27017';
-    const database = process.env.DB_DATABASE || 'files_manager';
-    const url = `mongodb://${host}:${port}/`;
+    const host = env.DB_PORT ? env.DB_PORT : '127.0.0.1';
+    const port = env.DB_HOST ? env.DB_HOST : 27017;
+    const database = env.DB_DATABASE ? env.DB_DATABASE : 'files_manager';
 
-    // connects to the MongoDB database
-    MongoClient.connect(url, { useUnifiedTopology: true }, (error, client) => {
-      if (error) throw (error);
-
-      // Store the database ref in the databaseName variable
-      this.databaseName = client.db(database);
-    });
+    // Initialize the MongoDB client and establish the connection
+    this.myClient = MongoClient(`mongodb://${host}:${port}/${database}`);
+    this.myClient.connect();
   }
 
-  // Check if `databaseName` has a database reference
+  // Check if the database client is alive and connected
   isAlive() {
-    return !!this.databaseName;
+    return this.myClient.isConnected();
   }
 
-  // Gets the number of documents in the `users` collection
+  // Gets the number of documents in the 'users' collection
   async nbUsers() {
-    const nbusers = await this.databaseName.collection('users').countDocuments();
-    return nbusers;
+    const myDB = this.myClient.db();
+    const myCollection = myDB.collection('users');
+    return myCollection.countDocuments();
   }
 
-  // Gets the number of documents in the `files` collection
+  // Get the number of documents in the 'files' collection
   async nbFiles() {
-    const nbfiles = await this.databaseName.collection('files').countDocuments();
-    return nbfiles;
+    const myDB = this.myClient.db();
+    const myCollection = myDB.collection('files');
+    return myCollection.countDocuments();
+  }
+
+  // Check if a user with the given email exists
+  async userExists(email) {
+    const myDB = this.myClient.db();
+    const myCollection = myDB.collection('users');
+    return myCollection.findOne({ email });
+  }
+
+  // Create a new user with the given email and passwordHash
+  async newUser(email, passwordHash) {
+    const myDB = this.myClient.db();
+    const myCollection = myDB.collection('users');
+    return myCollection.insertOne({ email, passwordHash });
+  }
+
+  // Filter and find a user based on the provided filters
+  async filterUser(filters) {
+    const myDB = this.myClient.db();
+    const myCollection = myDB.collection('users');
+
+    if ('_id' in filters) {
+      // Convert '_id' filter to ObjectId
+      filters._id = ObjectId(filters._id);
+    }
+
+    return myCollection.findOne(filters);
+  }
+
+  // Filter and find files based on the provided filters
+  async filterFiles(filters) {
+    const myDB = this.myClient.db();
+    const myCollection = myDB.collection('files');
+
+    const idFilters = ['_id', 'userId', 'parentId'].filter((prop) => prop in filters && filters[prop] !== '0');
+
+    idFilters.forEach((i) => {
+      // Convert '_id', 'userId', and 'parentId' filters to ObjectId
+      filters[i] = ObjectId(filters[i]);
+    });
+
+    return myCollection.findOne(filters);
   }
 }
 
