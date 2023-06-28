@@ -10,13 +10,22 @@ class FilesController {
       name, type, parentId, isPublic, data,
     } = request.body;
 
-    if (!name || !type || (!['folder', 'file', 'image'].includes(type)) || (!data && type !== 'folder')) {
+    let errorMessage;
+
+    if (!name) {
+      errorMessage = 'Missing name';
+    } else if (!type || !['folder', 'file', 'image'].includes(type)) {
+      errorMessage = 'Missing type';
+    } else if (!data && type !== 'folder') {
+      errorMessage = 'Missing data';
+    }
+
+    if (errorMessage) {
       // Missing name, type, or data
-      response.status(400).json({ error: `Missing ${!name ? 'name' : !type || !['folder', 'file', 'image'].includes(type) ? 'type' : 'data'}` }).end();
+      response.status(400).json({ error: errorMessage }).end();
     } else {
       try {
         let flag = false;
-
         if (parentId) {
           // Check if parent exists and is a folder
           const folder = await dbClient.filterFiles({ _id: parentId });
