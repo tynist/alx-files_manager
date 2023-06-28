@@ -1,15 +1,17 @@
-// Import Express module and the routes module
+// Import Express framework & process env variables
 const express = require('express');
-const routes = require('./routes/index');
+const { env } = require('process');
+
+ // Import the main route file.
+const mainRoute = require('./routes/index');
 
 // Create an Express application and sets port number
 const app = express();
-const port = process.env.PORT || 5000;
+const port = env.PORT || 5000;
 
-// Use the router to set up routes for the server
-router(server);
+app.use(express.json()); // Enable JSON parsing
+app.use(mainRoute); // Register the main route
+app.listen(port, '127.0.0.1'); // Listen on `port` for connections.
 
-// Start the server and listen on the specified port
-server.listen(port, () => {
-  console.log(`Server listening at https://localhost:${port}/`);
-});
+// Export the application
+module.exports = app;
