@@ -1,18 +1,17 @@
+// Import required modules
 const express = require('express');
-const { env } = require('process');
+const router = require('./routes/index');
 
-const mainRoute = require('./routes/index');
+const app = express(); // Create an Express app
+const port = parseInt(process.env.PORT, 10) || 5000; // Set the port
 
-const app = express();
-const port = env.PORT || 5000;
-
-// Middleware to parse JSON request bodies
-app.use(express.json());
-
-// Mount the routes from routes/index.js on the root path '/
-app.use('/', mainRoute);
+app.use(express.json()); // Middleware to parse JSON requests
+app.use('/', router); // Use the router for routing
 
 // Start the server
 app.listen(port, () => {
-  console.log('Server running on port', port);
+  console.log(`Server running on port ${port}`);
 });
+
+// Export the app
+module.exports = app;
