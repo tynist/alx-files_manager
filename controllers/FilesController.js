@@ -73,9 +73,9 @@ class FilesController {
       { limit: 20, skip: 20 * page },
     );
     const res = await cursor.toArray();
-    res.forEach((i) => {
-      i.id = i._id;
-      delete i._id;
+    const transformedRes = res.map((i) => {
+      const { _id, ...rest } = i;
+      return { id: _id, ...rest };
     });
     // Return files
     response.status(200).json(res).end();
