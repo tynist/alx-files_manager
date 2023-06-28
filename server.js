@@ -1,5 +1,7 @@
 const express = require('express');
-const router = require('./routes');
+const { env } = require('process');
+
+const mainRoute = require('./routes/index');
 
 const app = express();
 const port = env.PORT || 5000;
@@ -8,7 +10,7 @@ const port = env.PORT || 5000;
 app.use(express.json());
 
 // Mount the routes from routes/index.js on the root path '/
-app.use('/', routes);
+app.use('/', mainRoute);
 
 // Start the server
 app.listen(port, () => {
