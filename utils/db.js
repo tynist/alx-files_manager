@@ -1,70 +1,109 @@
-import { env } from 'process';
 import { MongoClient, ObjectId } from 'mongodb';
+import sha1 from 'sha1';
 
-// eslint-disable-next-line import/prefer-default-export
-export class DBClient {
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_PORT = process.env.DB_PORT || 27017;
+const DB_DATABASE = process.env.DB_DATABASE || 'files_manager';
+
+/**
+ * A MongoDB Client Class
+ */
+class DBClient {
   constructor() {
-    const host = env.DB_PORT ? env.DB_PORT : '127.0.0.1';
-    const port = env.DB_HOST ? env.DB_HOST : 27017;
-    const database = env.DB_DATABASE ? env.DB_DATABASE : 'files_manager';
-    this.myClient = MongoClient(`mongodb://${host}:${port}/${database}`);
-    this.myClient.connect();
-  }
-
-  isAlive() {
-    return this.myClient.isConnected();
-  }
-
-  async nbUsers() {
-    /* returns number of documents in the collection users */
-    const myDB = this.myClient.db();
-    const myCollection = myDB.collection('users');
-    return myCollection.countDocuments();
-  }
-
-  async nbFiles() {
-    /* returns number of documents in the collection files */
-    const myDB = this.myClient.db();
-    const myCollection = myDB.collection('files');
-    return myCollection.countDocuments();
-  }
-
-  async userExists(email) {
-    /* returns true if the user with the given email exists */
-    const myDB = this.myClient.db();
-    const myCollection = myDB.collection('users');
-    return myCollection.findOne({ email });
-  }
-
-  async newUser(email, passwordHash) {
-    /* creates a new user with the given email and passwordHash */
-    const myDB = this.myClient.db();
-    const myCollection = myDB.collection('users');
-    return myCollection.insertOne({ email, passwordHash });
-  }
-
-  async filterUser(filters) {
-    const myDB = this.myClient.db();
-    const myCollection = myDB.collection('users');
-    if ('_id' in filters) {
-      // eslint-disable-next-line no-param-reassign
-      filters._id = ObjectId(filters._id);
-    }
-    return myCollection.findOne(filters);
-  }
-
-  async filterFiles(filters) {
-    const myDB = this.myClient.db();
-    const myCollection = myDB.collection('files');
-    const idFilters = ['_id', 'userId', 'parentId'].filter((prop) => prop in filters && filters[prop] !== '0');
-    idFilters.forEach((i) => {
-      // eslint-disable-next-line no-param-reassign
-      filters[i] = ObjectId(filters[i]);
+    this.client = new MongoClient(
+      `mongodb://${DB_HOST}:${DB_PORT}/${DB_DATABASE}`,
+    );
+    this.isConnected = false;
+    this.db = null;
+    this.client.connect((err) => {
+      if (!err) {
+        this.isConnected = true;
+        this.db = this.client.db(DB_DATABASE);
+      }
     });
-    return myCollection.findOne(filters);
+  }
+
+  /**
+   * Checks if the mongoDb client is alive.
+   *
+   * @return {boolean} The connection status of the mongoDb.
+   */
+  isAlive() {
+    return this.isConnected;
+  }
+
+  /**
+   * Asynchronously counts the num of documents in the "users" collection.
+   *
+   * @return {Promise<number>} The num of documents in the "users" collection.
+   */
+  async nbUsers() {
+    return this.db.collection('users').countDocuments();
+  }
+
+  /**
+   * Calculates the number of files in the 'files' collection in the database.
+   *
+   * @return {Promise<number>} Returns a Promise that resolves to the number of
+   * files in the 'files' collection.
+   */
+  async nbFiles() {
+    return this.db.collection('files').countDocuments();
+  }
+
+  /**
+   * Returns the 'files' collection from the database.
+   *
+   * @return {Collection} The 'files' collection.
+   */
+  filesCollection() {
+    return this.db.collection('files');
+  }
+
+  /**
+   * Finds a user by their email in the "users" collection.
+   *
+   * @param {string} email - The email of the user to find.
+   * @return {Promise} A Promise that resolves with the user object, or null if
+   * not found.
+   */
+  findUserByEmail(email) {
+    return this.db.collection('users').findOne({ email });
+  }
+
+  /**
+   * Finds a user by their ID in the database.
+   *
+   * @param {string} userId - The ID of the user to find.
+   * @return {Promise<object>} A promise that resolves to the user object if
+   * found, or null if not found.
+   */
+  findUserById(userId) {
+    return this.db.collection('users').findOne({ _id: ObjectId(userId) });
+  }
+
+  /**
+   * Adds a new user to the database with the given email and password.
+   *
+   * @param {string} email - The email of the user to add.
+   * @param {string} password - The password of the user to add.
+   * @return {Object} The user object that was added to the database, with the
+   * password and _id fields removed.
+   */
+  async addUser(email, password) {
+    const hashedPassword = sha1(password);
+    const result = await this.db.collection('users').insertOne(
+      {
+        email,
+        password: hashedPassword,
+      },
+    );
+    return {
+      email: result.ops[0].email,
+      id: result.ops[0]._id,
+    };
   }
 }
 
-const dbClient = new DBClient();
-
-export default dbClient;
+const dBClient = new DBClient();
+export default dBClient;
