@@ -10,21 +10,9 @@ class FilesController {
       name, type, parentId, isPublic, data,
     } = request.body;
 
-    if (
-      !name
-      || !type
-      || (!['folder', 'file', 'image'].includes(type))
-      || (!data && type !== 'folder')
-    ) {
+    if (!name || !type || (!['folder', 'file', 'image'].includes(type)) || (!data && type !== 'folder')) {
       // Missing name, type, or data
-      response
-        .status(400)
-        .json({
-          error: `Missing ${
-            !name ? 'name' : !type || !['folder', 'file', 'image'].includes(type) ? 'type' : 'data'
-          }`,
-        })
-        .end();
+      response.status(400).json({ error: `Missing ${!name ? 'name' : !type || !['folder', 'file', 'image'].includes(type) ? 'type' : 'data'}` }).end();
     } else {
       try {
         let flag = false;
