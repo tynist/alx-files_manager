@@ -1,41 +1,47 @@
+// Import required modules
 const { createClient } = require('redis');
 const { promisify } = require('util');
 
+// Class to define methods for commonly used Redis commands
 class RedisClient {
   constructor() {
-    // Create a Redis client
-    this.myClient = createClient();
-    // Handle error events from the Redis client
-    this.myClient.on('error', (error) => console.log(error));
+    this.client = createClient();
+    this.client.on('error', (error) => {
+      console.log(`Redis client not connected to server: ${error}`);
+    });
   }
 
+  // Check connection status and report
   isAlive() {
-    // Check if the Redis client is connected
-    return this.myClient.connected;
+    if (this.client.connected) {
+      return true;
+    }
+    return false;
   }
 
+  // Get value for a given key from the Redis server
   async get(key) {
-    // Promisify the Redis GET method
-    const getAsync = promisify(this.myClient.get).bind(this.myClient);
-    return getAsync(key); // Retrieve the value associated with the key
+    const redisGet = promisify(this.client.get).bind(this.client);
+    const value = await redisGet(key);
+    return value;
   }
 
-  async set(key, val, time) {
-    // Promisify the Redis SET method
-    const setAsync = promisify(this.myClient.set).bind(this.myClient);
-    // Set the value associated with the key and specify the expiration time
-    return setAsync(key, val, 'EX', time);
+  // Set key-value pair to the Redis server
+  async set(key, value, time) {
+    const redisSet = promisify(this.client.set).bind(this.client);
+    await redisSet(key, value);
+    await this.client.expire(key, time);
   }
 
+  // Delete key-value pair from the Redis server
   async del(key) {
-    // Promisify the Redis DEL method
-    const delAsync = promisify(this.myClient.del).bind(this.myClient);
-    return delAsync(key); // Delete the value associated with the key
+    const redisDel = promisify(this.client.del).bind(this.client);
+    await redisDel(key);
   }
 }
 
-// Create an instance of the RedisClient class
+// Create an instance of RedisClient
 const redisClient = new RedisClient();
 
-// Export the Redis client as a module
+// Export the RedisClient instance
 module.exports = redisClient;
