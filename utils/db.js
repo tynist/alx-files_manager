@@ -47,22 +47,28 @@ class DBClient {
   async filterUser(filters) {
     const myDB = this.myClient.db();
     const myCollection = myDB.collection('users');
-    if ('_id' in filters) {
+    const updatedFilters = { ...filters };
+
+    if ('_id' in updatedFilters) {
       // Convert the '_id' filter to ObjectId format
-      filters._id = ObjectId(filters._id);
+      updatedFilters._id = ObjectId(updatedFilters._id);
     }
-    return myCollection.findOne(filters);
+
+    return myCollection.findOne(updatedFilters);
   }
 
   async filterFiles(filters) {
     const myDB = this.myClient.db();
     const myCollection = myDB.collection('files');
-    const idFilters = ['_id', 'userId', 'parentId'].filter((prop) => prop in filters && filters[prop] !== '0');
+    const updatedFilters = { ...filters };
+    const idFilters = ['_id', 'userId', 'parentId'].filter((prop) => prop in updatedFilters && updatedFilters[prop] !== '0');
+
     idFilters.forEach((i) => {
       // Convert id filters to ObjectId format
-      filters[i] = ObjectId(filters[i]);
+      updatedFilters[i] = ObjectId(updatedFilters[i]);
     });
-    return myCollection.findOne(filters);
+
+    return myCollection.findOne(updatedFilters);
   }
 }
 
