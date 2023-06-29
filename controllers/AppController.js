@@ -1,29 +1,24 @@
-// Import the redis client and the db client
 const redisClient = require('../utils/redis');
 const dbClient = require('../utils/db');
 
-// Controller class for the app
 class AppController {
-  // Get the status of Redis and MongoDB connections
-  static getStatus(req, res) {
-    const data = {
-      redis: redisClient.isAlive(),
-      db: dbClient.isAlive(),
-    };
-    // Send the statusData object back to the client
-    res.status(200).send(data);
+  // Method to get the status of the Redis and database connections
+  static getStatus(request, response) {
+    // Check if Redis and database connections are alive
+    response.status(200).json({ redis: redisClient.isAlive(), db: dbClient.isAlive() });
   }
 
-  static async getStats(req, res) {
-    // Create a statsData object
-    const statsData = {
-      users: await dbClient.nbUsers(),
-      files: await dbClient.nbFiles(),
-    };
-    // Send the statsData object back to the client
-    res.status(200).send(statsData);
+  // Method to get the number of users and files in the database
+  static async getStats(request, response) {
+    // Get the number of users from the database
+    const usersNum = await dbClient.nbUsers();
+
+    // Get the number of files from the database
+    const filesNum = await dbClient.nbFiles();
+
+    // Send the number of users and files as a JSON response
+    response.status(200).json({ users: usersNum, files: filesNum });
   }
 }
 
-// Export the AppController class
 module.exports = AppController;

@@ -1,57 +1,67 @@
 const sha1 = require('sha1');
 const { v4: uuidv4 } = require('uuid');
-const DBClient = require('../utils/db');
-const RedisClient = require('../utils/redis');
+const dbClient = require('../utils/db');
+const redisClient = require('../utils/redis');
 
 class AuthController {
-  static async getConnect(req, res) {
-    // Get the "Authorization" header from the request
-    const authHeader = req.header('Authorization') || '';
-    if (!authHeader) return res.status(401).send({ error: 'Unauthorized' });
+  static async getConnect(request, response) {
+    // Extract user email from Authorization header
+    const authData = request.header('Authorization');
+    let userEmail = authData.split(' ')[1];
+    const buff = Buffer.from(userEmail, 'base64');
+    userEmail = buff.toString('ascii');
 
-    // Decode the authorization header
-    const dCredentials = Buffer.from(authHeader.replace('Basic ', ''), 'base64');
-    // Parse the decoded credentials into an object
-    const credentials = {
-      email: dCredentials.toString('utf-8').split(':')[0],
-      password: dCredentials.toString('utf-8').split(':')[1],
-    };
-    if (!credentials.email || !credentials.password) return res.status(401).send({ error: 'Unauthorized' });
+    // Split email and password
+    const data = userEmail.split(':'); // contains email and password
 
-    // Hash the password using sha1
-    credentials.password = sha1(credentials.password);
+    // Check if email and password are present
+    if (data.length !== 2) {
+      response.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
 
-    // Find the user in the database
-    const user = await DBClient.db
-      .collection('users')
-      .findOne(credentials);
-    if (!user) return res.status(401).send({ error: 'Unauthorized' });
+    // Hash the password
+    const hashedPassword = sha1(data[1]);
 
-    const token = uuidv4(); // Generate a new token
-    const key = `auth_${token}`; // Create a key in Redis for the token
-    // Set the key in Redis with the user ID
-    await RedisClient.set(key, user._id.toString(), 86400);
+    // Access the "users" collection in the database
+    const users = dbClient.db.collection('users');
 
-    return res.status(200).send({ token }); // Return the generated token as a response
+    // Find the user with matching email and hashed password
+    users.findOne({ email: data[0], password: hashedPassword }, async (err, user) => {
+      if (user) {
+        // Generate a unique token
+        const token = uuidv4();
+
+        // Set the token as a key in Redis with the user ID as the value
+        const key = `auth_${token}`;
+        await redisClient.set(key, user._id.toString(), 60 * 60 * 24);
+
+        // Return the token in the response
+        response.status(200).json({ token });
+      } else {
+        response.status(401).json({ error: 'Unauthorized' });
+      }
+    });
   }
 
-  // Disconnect the user
-  static async getDisconnect(req, res) {
-    // Get the token from the request header
-    const token = req.header('X-Token') || '';
-    if (!token) return res.status(401).send({ error: 'Unauthorized' });
+  static async getDisconnect(request, response) {
+    // Get the token from X-Token header
+    const token = request.header('X-Token');
 
-    // Get the user ID from Redis
-    const userId = await RedisClient.get(`auth_${token}`);
-    if (!userId) return res.status(401).send({ error: 'Unauthorized' });
+    // Construct the key for Redis lookup
+    const key = `auth_${token}`;
 
-    // Delete the token from Redis
-    await RedisClient.del(`auth_${token}`);
+    // Get the user ID associated with the token from Redis
+    const id = await redisClient.get(key);
 
-    // Return a 204 No Content response
-    return res.status(204).send();
+    if (id) {
+      // If the token exists, delete it from Redis
+      await redisClient.del(key);
+      response.status(204).json({});
+    } else {
+      response.status(401).json({ error: 'Unauthorized' });
+    }
   }
 }
 
-// Export the AuthController class
 module.exports = AuthController;

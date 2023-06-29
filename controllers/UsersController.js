@@ -1,57 +1,68 @@
-// Import the sha1, ObjectId, DBClient and RedisClient modules
+// Importing required modules
 const sha1 = require('sha1');
-const { ObjectId } = require('mongodb');
-const DBClient = require('../utils/db');
-const RedisClient = require('../utils/redis');
+const { ObjectID } = require('mongodb');
+const Queue = require('bull');
+const dbClient = require('../utils/db');
+const redisClient = require('../utils/redis');
+
+// Creating a new queue instance
+const userQueue = new Queue('userQueue', 'redis://127.0.0.1:6379');
 
 class UsersController {
-  // Create a new user
-  static async postNew(req, res) {
-    // Get the email and password from the request body
-    const { email, password } = req.body;
-    if (!email) return res.status(400).send({ error: 'Missing email' });
-    if (!password) return res.status(400).send({ error: 'Missing password' });
+  // Handles the creation of a new user
+  static postNew(request, response) {
+    const { email, password } = request.body;
 
-    // Check if email already exists
-    const userExists = await DBClient.db
-      .collection('users')
-      .findOne({ email });
-    if (userExists) return res.status(400).send({ error: 'Already exist' });
+    // Checking for missing email and password
+    if (!email) {
+      response.status(400).json({ error: 'Missing email' });
+      return;
+    }
+    if (!password) {
+      response.status(400).json({ error: 'Missing password' });
+      return;
+    }
 
-    // Hash the password using SHA1
-    const hashedPasswrd = sha1(password);
-
-    // Insert the user into the database
-    const newUser = await DBClient.db
-      .collection('users')
-      .insertOne({ email, password: hashedPasswrd });
-
-    return res // Send the new user's ID and email back to the client
-      .status(201)
-      .send({ id: newUser.insertedId, email });
+    const users = dbClient.db.collection('users');
+    users.findOne({ email }, (err, user) => {
+      if (user) {
+        response.status(400).json({ error: 'Already exist' });
+      } else {
+        const hashedPassword = sha1(password);
+        users
+          .insertOne({
+            email,
+            password: hashedPassword,
+          })
+          .then((result) => {
+            response.status(201).json({ id: result.insertedId, email });
+            userQueue.add({ userId: result.insertedId });
+          })
+          .catch((error) => console.log(error));
+      }
+    });
   }
 
-  // Get the current user
-  static async getMe(req, res) {
-    // Get the user token from the request header
-    const userToken = req.header('X-Token') || null;
-    if (!userToken) return res.status(401).send({ error: 'Unauthorized' });
-
-    // Retrieve the user ID from Redis using the token
-    const userId = await RedisClient.get(`auth_${userToken}`);
-    if (!userId) return res.status(401).send({ error: 'Unauthorized' });
-
-    // Retrieve the user from the database using the ID
-    const user = await DBClient.users.findOne({ _id: ObjectId(userId) });
-    if (!user) return res.status(401).send({ error: 'Unauthorized' });
-
-    // Remove the password field from the user object(response)
-    delete user.password;
-
-    // Send the user object back to the client
-    return res.status(200).send({ id: user._id, email: user.email });
+  // Retrieves the details of the authenticated user
+  static async getMe(request, response) {
+    const token = request.header('X-Token');
+    const key = `auth_${token}`;
+    const userId = await redisClient.get(key);
+    if (userId) {
+      const users = dbClient.db.collection('users');
+      const idObject = new ObjectID(userId);
+      users.findOne({ _id: idObject }, (err, user) => {
+        if (user) {
+          response.status(200).json({ id: userId, email: user.email });
+        } else {
+          response.status(401).json({ error: 'Unauthorized' });
+        }
+      });
+    } else {
+      console.log('Hupatikani!');
+      response.status(401).json({ error: 'Unauthorized' });
+    }
   }
 }
 
-// Export the UsersController class
 module.exports = UsersController;

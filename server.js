@@ -1,15 +1,17 @@
-// Import Express module and the routes module
+// Import required modules
 const express = require('express');
-const routes = require('./routes/index');
+const router = require('./routes/index');
 
-// Create an Express application and sets port number
-const app = express();
-const port = process.env.PORT || 5000;
+const app = express(); // Create an Express app
+const port = parseInt(process.env.PORT, 10) || 5000; // Set the port
 
-// Use the router to set up routes for the server
-router(server);
+app.use(express.json()); // Middleware to parse JSON requests
+app.use('/', router); // Use the router for routing
 
-// Start the server and listen on the specified port
-server.listen(port, () => {
-  console.log(`Server listening at https://localhost:${port}/`);
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
+
+// Export the app
+module.exports = app;

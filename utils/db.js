@@ -1,45 +1,49 @@
+// Import required module
 const { MongoClient } = require('mongodb');
 
+// Set up MongoDB connection details
+const HOST = process.env.DB_HOST || 'localhost';
+const PORT = process.env.DB_PORT || 27017;
+const DATABASE = process.env.DB_DATABASE || 'files_manager';
+
+const url = `mongodb://${HOST}:${PORT}`;
+
+// Define the DBClient class
 class DBClient {
   constructor() {
-    // initializes the `databaseName` value to null
-    this.databaseName = null;
+    // Create a MongoClient instance
+    this.client = new MongoClient(url, { useUnifiedTopology: true, useNewUrlParser: true });
 
-    // Get MongoDB connection details from env variabless or use defaults
-    const host = process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || '27017';
-    const database = process.env.DB_DATABASE || 'files_manager';
-    const url = `mongodb://${host}:${port}/`;
-
-    // connects to the MongoDB database
-    MongoClient.connect(url, { useUnifiedTopology: true }, (error, client) => {
-      if (error) throw (error);
-
-      // Store the database ref in the databaseName variable
-      this.databaseName = client.db(database);
+    // Connect to the MongoDB server and initialize the database
+    this.client.connect().then(() => {
+      this.db = this.client.db(`${DATABASE}`);
+    }).catch((err) => {
+      console.log(err);
     });
   }
 
-  // Check if `databaseName` has a database reference
+  // Check if the MongoDB connection is alive
   isAlive() {
-    return !!this.databaseName;
+    return this.client.isConnected();
   }
 
-  // Gets the number of documents in the `users` collection
+  // Get the number of users in the database
   async nbUsers() {
-    const nbusers = await this.databaseName.collection('users').countDocuments();
-    return nbusers;
+    const users = this.db.collection('users');
+    const usersNum = await users.countDocuments();
+    return usersNum;
   }
 
-  // Gets the number of documents in the `files` collection
+  // Get the number of files in the database
   async nbFiles() {
-    const nbfiles = await this.databaseName.collection('files').countDocuments();
-    return nbfiles;
+    const files = this.db.collection('files');
+    const filesNum = await files.countDocuments();
+    return filesNum;
   }
 }
 
-// Create an instance of DBClient
+// Create a new instance of DBClient
 const dbClient = new DBClient();
 
-// Export the DBClient instance as the module's default export
+// Export the dbClient instance
 module.exports = dbClient;
